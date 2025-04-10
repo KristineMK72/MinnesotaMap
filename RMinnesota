@@ -1,0 +1,183 @@
+# Load libraries
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+library(dplyr)
+library(leaflet)
+library(htmltools)
+
+# 1. Get Minnesota boundary
+us_states <- ne_states(country = "United States of America", returnclass = "sf")
+mn <- us_states %>% filter(name == "Minnesota")
+
+# 2. Lakes & rivers (with error handling)
+lakes <- tryCatch({
+  ne_download(scale = 10, type = "lakes", category = "physical", returnclass = "sf")
+}, error = function(e) {
+  message("Warning: Lakes data could not be downloaded.")
+  NULL
+})
+
+rivers <- tryCatch({
+  ne_download(scale = 10, type = "rivers_lake_centerlines", category = "physical", returnclass = "sf")
+}, error = function(e) {
+  message("Warning: Rivers data could not be downloaded.")
+  NULL
+})
+
+# 3. Ensure lakes and rivers are valid before proceeding
+if (!is.null(lakes)) {
+  lakes <- st_make_valid(lakes)
+}
+if (!is.null(rivers)) {
+  rivers <- st_make_valid(rivers)
+}
+mn <- st_make_valid(mn)
+
+# 4. Cities (with error handling)
+cities <- tryCatch({
+  ne_download(scale = 10, type = "populated_places", category = "cultural", returnclass = "sf")
+}, error = function(e) {
+  message("Warning: Cities data could not be downloaded.")
+  NULL
+})
+
+# 5. Clip cities to Minnesota
+if (!is.null(cities)) {
+  cities_mn <- st_intersection(cities, mn)
+} else {
+  cities_mn <- NULL
+}
+
+# 6. Top N cities (by population estimate)
+top_n <- 10
+if (!is.null(cities_mn)) {
+  cities_top <- cities_mn %>%
+    arrange(desc(POP_MAX)) %>%
+    slice_head(n = top_n) %>%
+    mutate(
+      lon = st_coordinates(.)[,1],
+      lat = st_coordinates(.)[,2],
+      popup = paste0("<b>", name, "</b><br>Population: ", format(POP_MAX, big.mark = ","))
+    )
+} else {
+  cities_top <- NULL
+}
+
+# 7. Convert lakes, rivers, and Minnesota boundary to WGS84 (leaflet needs this)
+mn <- st_transform(mn, 4326)
+if (!is.null(lakes)) lakes <- st_transform(st_intersection(lakes, mn), 4326)
+if (!is.null(rivers)) rivers <- st_transform(st_intersection(rivers, mn), 4326)
+
+# 8. Build the map layers
+map_layers <- leaflet() %>%
+  addProviderTiles(providers$Esri.WorldTopoMap) %>%
+  addPolygons(data = mn, color = "#222", fill = FALSE, weight = 2, group = "State Boundary")
+
+# Add lakes layer if data is available
+if (!is.null(lakes)) {
+  map_layers <- map_layers %>%
+    addPolygons(data = lakes, fillColor = "skyblue", fillOpacity = 0.6, color = NA, group = "Lakes")
+}
+
+# Add rivers layer if data is available
+if (!is.null(rivers)) {
+  map_layers <- map_layers %>%
+    addPolylines(data = rivers, color = "blue", weight = 1, group = "Rivers")
+}
+
+# Add cities layer if data is available
+if (!is.null(cities_top)) {
+  map_layers <- map_layers %>%
+    addAwesomeMarkers(
+      lng = cities_top$lon,
+      lat = cities_top$lat,
+      popup = ~cities_top$popup,
+      icon = awesomeIcons(
+        icon = 'city',
+        library = 'fa',
+        markerColor = 'red'
+      ),
+      group = "Top Cities"
+    )
+}
+
+# 9. Final map with layers
+map_layers %>%
+  addLayersControl(
+    overlayGroups = c("Top Cities", "Lakes", "Rivers", "State Boundary"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+# Install htmlwidgets if it's not already installed
+install.packages("htmlwidgets")
+
+# Load the htmlwidgets package
+library(htmlwidgets)
+install.packages("rsconnect")
+library(rsconnect)
+
+rsconnect::setAccountInfo(name='<Your ShinyApps.io Username>',
+                          token='<Your ShinyApps.io Token>',
+                          secret='<Your ShinyApps.io Secret>')
+saveWidget(map_layers, file = "minnesota_map.html")
+
+
+rsconnect::setAccountInfo(name='93m1wj-kristine-kahler',
+                          token='C3429BF3C2EC5BA88F020DC70465B2D3',
+                          secret='p5C7diVQ0a4VkE3wAp6sb4p4Vhy25sIPfVA+LGxV')
+library(rsconnect)
+getwd()
+rsconnect::deployApp('"C:\Users\momkr\OneDrive\Documents\Minnesota.html"')
+# Load rstudioapi package
+library(rstudioapi)
+
+# Get the path of the current R script
+file_path <- rstudioapi::getActiveDocumentContext()$path
+file_path
+
+# Load rstudioapi package
+library(rstudioapi)
+
+# Get the path of the current R script
+file_path <- rstudioapi::getActiveDocumentContext()$path
+file_path
+rsconnect::deployApp("C:\\Users\\momkr\\OneDrive\\Documents\\Minnesota.html")
+
+# Deploy HTML file to shinyapps.io
+rsconnect::deployDoc("C:/Users/momkr/OneDrive/Documents/Minnesota.html")
+
+# app.R (Shiny app)
+library(shiny)
+
+ui <- fluidPage(
+  includeHTML("C:/Users/momkr/OneDrive/Documents/Minnesota.html")
+)
+
+server <- function(input, output, session) {}
+
+shinyApp(ui, server)
+
+
+
+install.packages("shinydashboard")
+library(shiny)
+library(shinydashboard)
+
+library(shiny)
+library(shinydashboard)
+
+# Define UI
+ui <- dashboardPage(
+  dashboardHeader(title = "Minnesota Dashboard"),
+  dashboardSidebar(),
+  dashboardBody(
+    # Include HTML file in the body of the dashboard
+    fluidRow(
+      box(
+        title = "Minnesota Map",
+        width = 12,
+        includeHTML("C:/Users/momkr/OneDrive/Documents/Minnesota.html")
+      )
+    )
+  )
+)
