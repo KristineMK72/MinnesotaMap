@@ -31,7 +31,7 @@ install.packages(c("httr", "jsonlite", "leaflet", "dplyr", "htmlwidgets"))
 
 In the script weather_map_mn.R, replace the line:
 
-api_key <- "2a38086dc2f585ac7817f626842e5d13"
+api_key <- "yourapikey"
 
 with your actual OpenWeather API key. You can get one by signing up at openweathermap.org.
 
