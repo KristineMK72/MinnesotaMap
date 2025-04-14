@@ -1,0 +1,6 @@
+# Ignore R data and history files
+.RData
+.Rhistory
+
+# Ignore environment variable files
+.env
